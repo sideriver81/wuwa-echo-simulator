@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鳴潮 音骸育成シミュレーター</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="title" data-i18n="title">鳴潮 音骸育成シミュレーター</h1>
+            <button id="langToggle" class="lang-toggle" data-i18n="language">Language: 日本語</button>
+        </header>
+
+        <main>
+            <!-- モード切替タブ -->
+            <div class="tabs-container">
+                <button class="tab-btn active" id="tabNormal" data-i18n="tab_normal">通常育成</button>
+                <button class="tab-btn" id="tabTransducer" data-i18n="tab_transducer">周波数調整器</button>
+            </div>
+
+            <!-- 目標設定 -->
+            <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <h2 data-i18n="targetSettings">目標条件設定</h2>
+                <button id="showProbBtn" class="secondary-btn" data-i18n="btn_showProb" style="padding: 6px 12px; font-size: 0.9rem;">サブステータス出現確率を確認</button>
+            </div>
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label data-i18n="requiredTotalCount">必須＋有効の合計要求数 (1〜5)</label>
+                    <input type="number" id="requiredTotalCount" value="1" min="1" max="5" style="background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; width: 80px; font-size: 1rem;">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="targetSubstats">サブステータス設定（必須・有効の指定、最低要求値）</label>
+                    <div id="substatContainer" class="substat-grid">
+                        <!-- JSで動的に生成 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- シミュレーション設定 -->
+            <section class="card">
+                <h2 data-i18n="simulationSettings">シミュレーション設定</h2>
+                <div class="form-group">
+                    <label data-i18n="targetReachCount">目標達成回数（試行回数）</label>
+                    <input type="number" id="targetReachCount" value="1000" min="1" max="100000" style="background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; width: 120px; font-size: 1rem;">
+                </div>
+            </section>
+
+            <!-- 育成戦略 -->
+            <section class="card" id="strategySection">
+                <h2 data-i18n="strategy">育成続行条件</h2>
+                <div class="form-group">
+                    <p data-i18n="strategy_desc" style="font-size: 0.85rem; color: #a0a0a0; margin-bottom: 12px; line-height: 1.4;">
+                        指定したレベルの時点で、条件を満たしていなければリサイクルします。※条件を厳しくすると、そのまま育てていれば成功したかもしれない音骸も捨てるため、最終的な達成確率は下がります。
+                    </p>
+                    
+                    <div class="threshold-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                        <!-- Lv5 -->
+                        <div class="threshold-item" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                            <div data-i18n="lvl5" style="font-weight: 500; margin-bottom: 6px; font-size: 0.9rem;">Lv 5 (枠1)</div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span data-i18n="thresh_mustOnly" style="font-size: 0.8rem; color: #f44336;">必須のみ:</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="t_must_0" value="0" min="0" max="1" style="width: 40px; padding: 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-align: center;">
+                                        <span data-i18n="thresh_countSuffix" style="font-size: 0.8rem;">個以上</span>
+                                    </div>
+                                </div>
+                                <div style="text-align: center; margin: -2px 0;">
+                                    <select id="t_op_0" style="padding: 2px 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); font-size: 0.75rem;">
+                                        <option value="and" data-i18n="op_and">かつ (AND)</option>
+                                        <option value="or" data-i18n="op_or">または (OR)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span data-i18n="thresh_mustOrValid" style="font-size: 0.8rem; color: #2196f3;">必須＋有効:</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="t_any_0" value="0" min="0" max="1" style="width: 40px; padding: 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-align: center;">
+                                        <span data-i18n="thresh_countSuffix" style="font-size: 0.8rem;">個以上</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Lv10 -->
+                        <div class="threshold-item" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                            <div data-i18n="lvl10" style="font-weight: 500; margin-bottom: 6px; font-size: 0.9rem;">Lv 10 (枠2)</div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span data-i18n="thresh_mustOnly" style="font-size: 0.8rem; color: #f44336;">必須のみ:</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="t_must_1" value="0" min="0" max="2" style="width: 40px; padding: 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-align: center;">
+                                        <span data-i18n="thresh_countSuffix" style="font-size: 0.8rem;">個以上</span>
+                                    </div>
+                                </div>
+                                <div style="text-align: center; margin: -2px 0;">
+                                    <select id="t_op_1" style="padding: 2px 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); font-size: 0.75rem;">
+                                        <option value="and" data-i18n="op_and">かつ (AND)</option>
+                                        <option value="or" data-i18n="op_or">または (OR)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span data-i18n="thresh_mustOrValid" style="font-size: 0.8rem; color: #2196f3;">必須＋有効:</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="t_any_1" value="0" min="0" max="2" style="width: 40px; padding: 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-align: center;">
+                                        <span data-i18n="thresh_countSuffix" style="font-size: 0.8rem;">個以上</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Lv15 -->
+                        <div class="threshold-item" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                            <div data-i18n="lvl15" style="font-weight: 500; margin-bottom: 6px; font-size: 0.9rem;">Lv 15 (枠3)</div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span data-i18n="thresh_mustOnly" style="font-size: 0.8rem; color: #f44336;">必須のみ:</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="t_must_2" value="0" min="0" max="3" style="width: 40px; padding: 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-align: center;">
+                                        <span data-i18n="thresh_countSuffix" style="font-size: 0.8rem;">個以上</span>
+                                    </div>
+                                </div>
+                                <div style="text-align: center; margin: -2px 0;">
+                                    <select id="t_op_2" style="padding: 2px 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); font-size: 0.75rem;">
+                                        <option value="and" data-i18n="op_and">かつ (AND)</option>
+                                        <option value="or" data-i18n="op_or">または (OR)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span data-i18n="thresh_mustOrValid" style="font-size: 0.8rem; color: #2196f3;">必須＋有効:</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="t_any_2" value="0" min="0" max="3" style="width: 40px; padding: 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-align: center;">
+                                        <span data-i18n="thresh_countSuffix" style="font-size: 0.8rem;">個以上</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Lv20 -->
+                        <div class="threshold-item" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                            <div data-i18n="lvl20" style="font-weight: 500; margin-bottom: 6px; font-size: 0.9rem;">Lv 20 (枠4)</div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span data-i18n="thresh_mustOnly" style="font-size: 0.8rem; color: #f44336;">必須のみ:</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="t_must_3" value="0" min="0" max="4" style="width: 40px; padding: 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-align: center;">
+                                        <span data-i18n="thresh_countSuffix" style="font-size: 0.8rem;">個以上</span>
+                                    </div>
+                                </div>
+                                <div style="text-align: center; margin: -2px 0;">
+                                    <select id="t_op_3" style="padding: 2px 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); font-size: 0.75rem;">
+                                        <option value="and" data-i18n="op_and">かつ (AND)</option>
+                                        <option value="or" data-i18n="op_or">または (OR)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span data-i18n="thresh_mustOrValid" style="font-size: 0.8rem; color: #2196f3;">必須＋有効:</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="t_any_3" value="0" min="0" max="4" style="width: 40px; padding: 4px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-align: center;">
+                                        <span data-i18n="thresh_countSuffix" style="font-size: 0.8rem;">個以上</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <button id="runBtn" class="btn-primary">
+                <span data-i18n="runSimulation">シミュレーション実行</span>
+            </button>
+            
+            <div id="progressContainer" style="display: none; margin-top: 16px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span data-i18n="progress_running" style="font-size: 0.9rem; color: var(--accent-color);">シミュレーション実行中...</span>
+                        <button id="cancelBtn" class="btn-secondary" style="padding: 4px 12px; font-size: 0.8rem; background: rgba(244, 67, 54, 0.1); border-color: #f44336; color: #f44336; min-width: auto;" data-i18n="cancel_simulation">中止</button>
+                    </div>
+                    <span id="progressText" style="font-size: 0.9rem; font-weight: bold; color: var(--text-primary);">0%</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: var(--bg-surface); border-radius: 4px; overflow: hidden;">
+                    <div id="progressBar" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.1s linear;"></div>
+                </div>
+            </div>
+
+            <!-- 結果表示 -->
+            <section id="resultsSection" class="card results-section" style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h2 data-i18n="results" style="margin: 0;">シミュレーション結果</h2>
+                    <button id="copyBtn" class="btn-secondary" data-i18n="copyResults">結果をコピー</button>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-box" id="boxExactProb" style="grid-column: 1 / -1; background: rgba(244, 67, 54, 0.1); border-left: 4px solid var(--danger-color);">
+                        <div class="label" id="labelExactProb" data-i18n="res_exactProbTitle">目標達成確率 (育成続行条件 反映):</div>
+                        <div class="value" id="resExactProb" style="color: var(--danger-color);">-</div>
+                    </div>
+                    <div class="stat-box" id="boxBaseProb" style="grid-column: 1 / -1; opacity: 0.8;">
+                        <div class="label" data-i18n="res_baseProbTitle">目標達成確率 (育成続行条件 なし):</div>
+                        <div class="value" id="resBaseProb" style="color: var(--accent-color); font-size: 1.2rem;">-</div>
+                    </div>
+                    <div class="stat-box" id="boxAvgEchos">
+                        <div class="label" data-i18n="res_avgEchos">平均消費音骸:</div>
+                        <div class="value" id="resAvgEchos">-</div>
+                        <div id="resPctlEchos" class="sub-value" style="font-size:0.85rem; color:var(--text-secondary); display:none; margin-top: 4px;"></div>
+                    </div>
+                    <div class="stat-box" id="boxAvgRecords">
+                        <div class="label" data-i18n="res_avgRecords">平均消費特級レコード:</div>
+                        <div class="value" id="resAvgRecords">-</div>
+                        <div id="resPctlRecords" class="sub-value" style="font-size:0.85rem; color:var(--text-secondary); display:none; margin-top: 4px;"></div>
+                    </div>
+                    <div class="stat-box" id="boxAvgTuners">
+                        <div class="label" data-i18n="res_avgTuners">平均消費チュナ:</div>
+                        <div class="value" id="resAvgTuners">-</div>
+                        <div id="resPctlTuners" class="sub-value" style="font-size:0.85rem; color:var(--text-secondary); display:none; margin-top: 4px;"></div>
+                    </div>
+                    <!-- 周波数調整器用 -->
+                    <div class="stat-box" id="boxAvgTransducers" style="display: none; grid-column: 1 / -1; border-left: 4px solid #9c27b0; background: rgba(156, 39, 176, 0.1);">
+                        <div class="label" data-i18n="res_avgTransducers">平均消費周波数調整器:</div>
+                        <div class="value" id="resAvgTransducers" style="color: #ce93d8;">-</div>
+                        <div id="resPctlTransducers" class="sub-value" style="font-size:0.85rem; color:var(--text-secondary); display:none; margin-top: 4px;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                    <span data-i18n="chart_xAxis">グラフ横軸:</span>
+                    <select id="chartXAxis" style="background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px; border-radius: 4px;">
+                        <option value="tuners" data-i18n="chart_tuners" id="optTuners" selected>チュナ</option>
+                        <option value="echos" data-i18n="chart_echos" id="optEchos">音骸</option>
+                        <option value="records" data-i18n="chart_records" id="optRecords">特級レコード</option>
+                        <option value="transducers" data-i18n="chart_transducers" id="optTransducers" style="display: none;">周波数調整器</option>
+                    </select>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="consumptionChart"></canvas>
+                </div>
+            </section>
+        </main>
+        
+        <footer style="text-align: center; margin-top: 40px; padding: 20px 0; border-top: 1px solid var(--border-color);">
+            <a href="https://forms.gle/nN2vEAWWwxbirVdC6" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span data-i18n="feedback_link">不具合報告・ご意見はこちら (Googleフォーム)</span>
+            </a>
+        </footer>
+    </div>
+
+    <!-- 確率確認モーダル -->
+    <div id="probModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="modal_probTitle">サブステータス出現確率</h3>
+                <span class="modal-close" id="closeProbModal">&times;</span>
+            </div>
+            <div class="modal-body" id="probModalBody">
+                <!-- JavaScriptでテーブルを生成 -->
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
