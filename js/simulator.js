@@ -261,6 +261,8 @@ export function runSimulation(settings, progressCallback) {
             let impossible = false;
 
             for (let i = 0; i < 5; i++) {
+                // 注: EXP_TABLE[i].exp は、そのレベル「区間」を上げるための必要経験値（累計ではない）
+                // したがって、単純に足し合わせるだけで総消費経験値となる。
                 const expNeeded = EXP_TABLE[i].exp;
                 currentExpUsed += expNeeded;
                 
