@@ -1,2 +1,17 @@
-# wuwa-echo-simulator
-鳴潮の音骸育成コストや目標達成確率を計算するウェブシミュレーター / A web simulator to calculate the cost and probability of reaching target substats when upgrading Echoes in Wuthering Waves.
+# 鳴潮 音骸育成シミュレーター (Wuthering Waves Echo Upgrade Simulator)
+
+鳴潮の音骸育成における、目標ステータスの達成確率やアイテム消費量を計算・可視化するウェブシミュレーターです。
+Google Antigravity （モデル：Gemini Pro 3.1 Pro）を用いて制作しました。
+
+🌐 **[シミュレーターを利用する（ここをクリック）](https://sideriver81.github.io/wuwa-echo-simulator/)**
+
+## 主な機能 (Features)
+*   **通常育成モード**: 設定した条件の音骸を獲得するまでに必要な音骸やレコード、チュナの消費量を計算します。育成続行条件の設定も可能です。
+*   **周波数調整器モード**: サブステータス再抽選時の周波数調整器の消費量を計算します。
+*   **多言語対応**: 日本語と英語に対応
+
+## ご意見・不具合報告
+ツールの最下部にある「不具合報告・ご意見はこちら (Googleフォーム)」からお気軽にご連絡ください。
+
+## 免責事項
+当シミュレーターはファンメイドの非公式ツールであり、実際のゲーム内の挙動を完全に保証するものではありません。
