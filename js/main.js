@@ -314,6 +314,7 @@ function generateProbTable() {
         const rowspan = values.length;
         
         const sortedValues = [...values].sort((a, b) => b.value - a.value);
+        const totalWeight = values.reduce((sum, item) => sum + item.weight, 0);
         
         sortedValues.forEach(item => {
             const valText = type.includes('flat') || type === 'energyRegen' ? item.value : item.value + '%';
@@ -323,7 +324,7 @@ function generateProbTable() {
                 isFirst = false;
             }
             html += `<td>${valText}</td>`;
-            html += `<td>${item.weight.toFixed(4)}%</td>`;
+            html += `<td>${(item.weight / totalWeight * 100).toFixed(4)}%</td>`;
             html += `</tr>`;
         });
     });
