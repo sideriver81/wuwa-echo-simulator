@@ -90,7 +90,8 @@ const translations = {
 
         copied: "クリップボードにコピーしました",
         error_no_target: "目標のサブステータスを少なくとも1つ選択してください。",
-        feedback_link: "不具合報告・ご意見はこちら (Googleフォーム)"
+        feedback_link: "不具合報告・ご意見はこちら (Googleフォーム)",
+        github_link: "GitHub (ソースコード・使い方)"
     },
     en: {
         title: "Wuthering Waves Echo Upgrade Simulator",
@@ -181,7 +182,8 @@ const translations = {
 
         copied: "Copied to clipboard",
         error_no_target: "Please select at least one target sub-stat.",
-        feedback_link: "Report Bug / Feedback (Google Forms)"
+        feedback_link: "Report Bug / Feedback (Google Forms)",
+        github_link: "GitHub (Source Code & How to Use)"
     }
 };
 
