@@ -21,7 +21,61 @@ function initUI() {
             drawChart(currentResultData);
         }
     });
-    
+
+    // エクスポートボタン
+    document.getElementById('exportGraphBtn').addEventListener('click', () => {
+        if (currentChart) {
+            const originalCanvas = document.getElementById('consumptionChart');
+            
+            // 背景色付きの画像を生成するために一時的なキャンバスを作成
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = originalCanvas.width;
+            tempCanvas.height = originalCanvas.height;
+            const ctx = tempCanvas.getContext('2d');
+            
+            // 背景色を塗りつぶす (ダークテーマ色)
+            ctx.fillStyle = '#1e1e1e';
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // 元のグラフを上に描画
+            ctx.drawImage(originalCanvas, 0, 0);
+            
+            const link = document.createElement('a');
+            link.download = 'wuwa-echo-simulation-graph.png';
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
+    });
+
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+        if (!currentResultData || !currentResultData.history || currentResultData.history.length === 0) return;
+        
+        const isTransducer = currentMode === 'transducer';
+        let csvContent = "";
+        
+        if (isTransducer) {
+            csvContent += "Run,Transducers\n";
+            currentResultData.history.forEach((h, i) => {
+                csvContent += `${i + 1},${h.transducers}\n`;
+            });
+        } else {
+            csvContent += "Run,Echos,Records,Tuners\n";
+            currentResultData.history.forEach((h, i) => {
+                csvContent += `${i + 1},${h.echos},${h.records},${h.tuners}\n`;
+            });
+        }
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "wuwa-echo-simulation-data.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    });
+
     const cancelBtn = document.getElementById('cancelBtn');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', handleCancelSimulation);

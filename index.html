@@ -269,14 +269,20 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
-                    <span data-i18n="chart_xAxis">グラフ横軸:</span>
-                    <select id="chartXAxis" style="background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px; border-radius: 4px;">
-                        <option value="tuners" data-i18n="chart_tuners" id="optTuners" selected>チュナ</option>
-                        <option value="echos" data-i18n="chart_echos" id="optEchos">音骸</option>
-                        <option value="records" data-i18n="chart_records" id="optRecords">特級レコード</option>
-                        <option value="transducers" data-i18n="chart_transducers" id="optTransducers" style="display: none;">周波数調整器</option>
-                    </select>
+                <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <div>
+                        <span data-i18n="chart_xAxis">グラフ横軸:</span>
+                        <select id="chartXAxis" style="background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px; border-radius: 4px;">
+                            <option value="tuners" data-i18n="chart_tuners" id="optTuners" selected>チュナ</option>
+                            <option value="echos" data-i18n="chart_echos" id="optEchos">音骸</option>
+                            <option value="records" data-i18n="chart_records" id="optRecords">特級レコード</option>
+                            <option value="transducers" data-i18n="chart_transducers" id="optTransducers" style="display: none;">周波数調整器</option>
+                        </select>
+                    </div>
+                    <div style="margin-left: auto; display: flex; gap: 10px;">
+                        <button id="exportGraphBtn" class="action-btn secondary" style="padding: 6px 12px; font-size: 0.9rem;" data-i18n="export_graph">グラフを画像保存</button>
+                        <button id="exportCsvBtn" class="action-btn secondary" style="padding: 6px 12px; font-size: 0.9rem;" data-i18n="export_csv">CSVで保存</button>
+                    </div>
                 </div>
 
                 <div class="chart-container">

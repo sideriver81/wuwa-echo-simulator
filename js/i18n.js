@@ -29,7 +29,9 @@ const translations = {
         maxTuners: "最大消費チュナ",
         runSimulation: "シミュレーション実行",
         results: "シミュレーション結果",
-        copyResults: "結果をコピー",
+        copyResults: "結果をクリップボードにコピー",
+        export_graph: "グラフを画像保存",
+        export_csv: "CSVで保存",
         
         stat_critRate: "クリティカル率 (%)",
         stat_critDmg: "クリティカルダメージ (%)",
@@ -122,6 +124,8 @@ const translations = {
         runSimulation: "Run Simulation",
         results: "Simulation Results",
         copyResults: "Copy Results",
+        export_graph: "Export Graph",
+        export_csv: "Export CSV",
         
         stat_critRate: "Crit Rate (%)",
         stat_critDmg: "Crit DMG (%)",
