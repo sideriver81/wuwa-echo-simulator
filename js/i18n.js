@@ -119,7 +119,7 @@ const translations = {
         simulationSettings: "Simulation Settings",
         targetReachCount: "Target Reach Count (Simulations)",
         maxEchos: "Max Echoes Consumed",
-        maxRecords: "Max Premium Records Consumed",
+        maxRecords: "Max Premium Sealed Tubes Consumed",
         maxTuners: "Max Tuners Consumed",
         runSimulation: "Run Simulation",
         results: "Simulation Results",
@@ -151,7 +151,7 @@ const translations = {
         res_inOne: " per 1",
 
         res_avgEchos: "Avg Echoes Consumed:",
-        res_avgRecords: "Avg Premium Records:",
+        res_avgRecords: "Avg Premium Sealed Tubes:",
         res_avgTuners: "Avg Tuners Consumed:",
         res_avgTransducers: "Avg Transducers Consumed:",
         
@@ -162,7 +162,7 @@ const translations = {
         chart_distribution: "Consumption Distribution (Histogram)",
         chart_xAxis: "Chart X-Axis:",
         chart_echos: "Echoes",
-        chart_records: "Premium Records",
+        chart_records: "Premium Sealed Tubes",
         chart_tuners: "Tuners",
         chart_transducers: "Transducers",
         chart_frequency: "Frequency",
