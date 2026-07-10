@@ -4,9 +4,9 @@ let runSimulationJS, runTransducerSimulationJS;
 
 async function initEngines() {
     try {
-        const wasmModule = await import('./wasm/rust_engine.js');
+        const wasmModule = await import('./wasm/rust_engine.js?v=' + Date.now());
         const initWasm = wasmModule.default;
-        await initWasm();
+        await initWasm('./wasm/rust_engine_bg.wasm?v=' + Date.now());
         runSimulationWasm = wasmModule.run_simulation_wasm;
         runTransducerSimulationWasm = wasmModule.run_transducer_simulation_wasm;
         useWasm = true;

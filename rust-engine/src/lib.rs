@@ -39,9 +39,9 @@ pub struct Settings {
 
 #[derive(Serialize)]
 pub struct HistoryItem {
-    pub echos: usize,
-    pub records: usize,
-    pub tuners: usize,
+    pub echos: f64,
+    pub records: f64,
+    pub tuners: f64,
 }
 
 #[derive(Serialize)]
@@ -71,7 +71,7 @@ pub struct SimulationResult {
 
 #[derive(Serialize)]
 pub struct TransducerHistoryItem {
-    pub transducers: usize,
+    pub transducers: f64,
 }
 
 #[derive(Serialize)]
@@ -188,16 +188,16 @@ const TUNER_COST_PER_SLOT: f64 = 10.0;
 const RECYCLE_EXP_RATE: f64 = 0.75;
 const RECYCLE_TUNER_RATE: f64 = 0.30;
 
-fn get_percentile(sorted_array: &[usize], p: f64) -> f64 {
+fn get_percentile(sorted_array: &[f64], p: f64) -> f64 {
     if sorted_array.is_empty() { return 0.0; }
     let index = (p / 100.0) * (sorted_array.len() - 1) as f64;
     let lower = index.floor() as usize;
     let upper = index.ceil() as usize;
     let weight = index - index.floor();
     if upper >= sorted_array.len() {
-        return sorted_array[lower] as f64;
+        return sorted_array[lower];
     }
-    (sorted_array[lower] as f64) * (1.0 - weight) + (sorted_array[upper] as f64) * weight
+    sorted_array[lower] * (1.0 - weight) + sorted_array[upper] * weight
 }
 
 #[wasm_bindgen]
@@ -233,16 +233,16 @@ pub fn run_simulation_wasm(settings_val: JsValue, progress_callback: &js_sys::Fu
     let progress_update_interval = 100.max(target_reach_count / 100);
     
     let mut history = Vec::with_capacity(target_reach_count);
-    let mut total_echos: u64 = 0;
-    let mut total_records: u64 = 0;
-    let mut total_tuners: u64 = 0;
+    let mut total_echos: f64 = 0.0;
+    let mut total_records: f64 = 0.0;
+    let mut total_tuners: f64 = 0.0;
     
     let mut current_available = Vec::with_capacity(13);
     
     for run in 0..target_reach_count {
-        let mut echos_consumed = 0;
-        let mut records_consumed = 0;
-        let mut tuners_consumed = 0;
+        let mut echos_consumed: f64 = 0.0;
+        let mut records_consumed: f64 = 0.0;
+        let mut tuners_consumed: f64 = 0.0;
         
         let mut recycled_exp = 0.0;
         let mut recycled_tuners = 0.0;
@@ -250,7 +250,7 @@ pub fn run_simulation_wasm(settings_val: JsValue, progress_callback: &js_sys::Fu
         let mut target_reached = false;
         
         while !target_reached {
-            echos_consumed += 1;
+            echos_consumed += 1.0;
             
             let mut current_exp_used = 0;
             let mut current_tuners_used = 0.0;
@@ -271,9 +271,9 @@ pub fn run_simulation_wasm(settings_val: JsValue, progress_callback: &js_sys::Fu
                 } else {
                     let diff = exp_needed as f64 - recycled_exp;
                     recycled_exp = 0.0;
-                    let records_needed = (diff / RECORD_EXP as f64).ceil() as usize;
+                    let records_needed = (diff / RECORD_EXP as f64).ceil();
                     records_consumed += records_needed;
-                    recycled_exp += (records_needed * RECORD_EXP) as f64 - diff;
+                    recycled_exp += (records_needed * RECORD_EXP as f64) - diff;
                 }
                 
                 current_tuners_used += TUNER_COST_PER_SLOT;
@@ -282,7 +282,7 @@ pub fn run_simulation_wasm(settings_val: JsValue, progress_callback: &js_sys::Fu
                 } else {
                     let diff = TUNER_COST_PER_SLOT - recycled_tuners;
                     recycled_tuners = 0.0;
-                    tuners_consumed += diff.ceil() as usize; // Approximation
+                    tuners_consumed += diff.ceil(); // Approximation
                 }
                 
                 let idx = fastrand::usize(..current_available.len());
@@ -345,9 +345,9 @@ pub fn run_simulation_wasm(settings_val: JsValue, progress_callback: &js_sys::Fu
             records: records_consumed,
             tuners: tuners_consumed,
         });
-        total_echos += echos_consumed as u64;
-        total_records += records_consumed as u64;
-        total_tuners += tuners_consumed as u64;
+        total_echos += echos_consumed;
+        total_records += records_consumed;
+        total_tuners += tuners_consumed;
         
         if (run + 1) % progress_update_interval == 0 {
             let prog = (run + 1) as f64 / target_reach_count as f64;
@@ -370,9 +370,9 @@ pub fn run_simulation_wasm(settings_val: JsValue, progress_callback: &js_sys::Fu
         let mut e_arr: Vec<_> = history.iter().map(|h| h.echos).collect();
         let mut r_arr: Vec<_> = history.iter().map(|h| h.records).collect();
         let mut t_arr: Vec<_> = history.iter().map(|h| h.tuners).collect();
-        e_arr.sort_unstable();
-        r_arr.sort_unstable();
-        t_arr.sort_unstable();
+        e_arr.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+        r_arr.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+        t_arr.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
         
         percentiles = Some(PercentilesWrap {
             echos: Percentiles { median: get_percentile(&e_arr, 50.0), p95: get_percentile(&e_arr, 95.0) },
@@ -451,16 +451,16 @@ pub fn run_transducer_simulation_wasm(settings_val: JsValue, progress_callback: 
     let progress_update_interval = 100.max(target_reach_count / 100);
     
     let mut history = Vec::with_capacity(target_reach_count);
-    let mut total_transducers: u64 = 0;
+    let mut total_transducers: f64 = 0.0;
     
     let mut current_available = Vec::with_capacity(13);
     
     for run in 0..target_reach_count {
-        let mut run_transducers = 0;
+        let mut run_transducers: f64 = 0.0;
         let mut success = false;
         
         while !success {
-            run_transducers += cost_per_roll;
+            run_transducers += cost_per_roll as f64;
             
             current_available.clear();
             current_available.extend_from_slice(&initial_available_types);
@@ -492,7 +492,7 @@ pub fn run_transducer_simulation_wasm(settings_val: JsValue, progress_callback: 
             }
         }
         
-        total_transducers += run_transducers as u64;
+        total_transducers += run_transducers;
         history.push(TransducerHistoryItem { transducers: run_transducers });
         
         if (run + 1) % progress_update_interval == 0 {
@@ -509,7 +509,7 @@ pub fn run_transducer_simulation_wasm(settings_val: JsValue, progress_callback: 
     let mut percentiles = None;
     if target_reach_count >= 100 {
         let mut tr_arr: Vec<_> = history.iter().map(|h| h.transducers).collect();
-        tr_arr.sort_unstable();
+        tr_arr.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
         percentiles = Some(TransducerPercentilesWrap {
             transducers: Percentiles { median: get_percentile(&tr_arr, 50.0), p95: get_percentile(&tr_arr, 95.0) },
         });
