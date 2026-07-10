@@ -131,23 +131,55 @@ const ALL_TYPES: [StatType; 13] = [
     StatType::SkillDmg, StatType::LiberationDmg, StatType::FlatHp, StatType::FlatAtk, StatType::FlatDef,
 ];
 
-fn get_substat_values(stat_type: StatType) -> &'static [f64] {
-    match stat_type {
-        StatType::CritRate => &[6.3, 6.9, 7.5, 8.1, 8.7, 9.3, 9.9, 10.5][..],
-        StatType::CritDmg => &[12.6, 13.8, 15.0, 16.2, 17.4, 18.6, 19.8, 21.0][..],
-        StatType::HpPercent | StatType::AtkPercent | StatType::BasicAtkDmg | StatType::HeavyAtkDmg | StatType::SkillDmg | StatType::LiberationDmg => &[6.4, 7.1, 7.9, 8.6, 9.4, 10.1, 10.9, 11.6][..],
-        StatType::DefPercent => &[8.1, 9.0, 10.0, 10.9, 11.8, 12.8, 13.8, 14.7][..],
-        StatType::EnergyRegen => &[6.8, 7.6, 8.4, 9.2, 10.0, 10.8, 11.6, 12.4][..],
-        StatType::FlatHp => &[320.0, 360.0, 390.0, 430.0, 470.0, 510.0, 540.0, 580.0][..],
-        StatType::FlatAtk => &[30.0, 40.0, 50.0, 60.0][..],
-        StatType::FlatDef => &[40.0, 50.0, 60.0, 70.0][..],
-    }
+fn get_substat_data(stat_type: StatType) -> (&'static [f64], &'static [f64], f64) {
+    let (values, weights) = match stat_type {
+        StatType::CritRate => (
+            &[6.3, 6.9, 7.5, 8.1, 8.7, 9.3, 9.9, 10.5][..],
+            &[23.3333, 23.3333, 23.3333, 8.0, 8.0, 8.0, 3.0, 3.0][..],
+        ),
+        StatType::CritDmg => (
+            &[12.6, 13.8, 15.0, 16.2, 17.4, 18.6, 19.8, 21.0][..],
+            &[23.3333, 23.3333, 23.3333, 8.0, 8.0, 8.0, 3.0, 3.0][..],
+        ),
+        StatType::HpPercent | StatType::AtkPercent | StatType::BasicAtkDmg | StatType::HeavyAtkDmg | StatType::SkillDmg | StatType::LiberationDmg => (
+            &[6.4, 7.1, 7.9, 8.6, 9.4, 10.1, 10.9, 11.6][..],
+            &[6.7961, 7.7670, 20.3883, 24.2718, 17.4757, 14.5631, 5.8252, 2.9126][..],
+        ),
+        StatType::DefPercent => (
+            &[8.1, 9.0, 10.0, 10.9, 11.8, 12.8, 13.8, 14.7][..],
+            &[6.7961, 7.7670, 20.3883, 24.2718, 17.4757, 14.5631, 5.8252, 2.9126][..],
+        ),
+        StatType::EnergyRegen => (
+            &[6.8, 7.6, 8.4, 9.2, 10.0, 10.8, 11.6, 12.4][..],
+            &[6.7961, 7.7670, 20.3883, 24.2718, 17.4757, 14.5631, 5.8252, 2.9126][..],
+        ),
+        StatType::FlatHp => (
+            &[320.0, 360.0, 390.0, 430.0, 470.0, 510.0, 540.0, 580.0][..],
+            &[6.7961, 7.7670, 20.3883, 24.2718, 17.4757, 14.5631, 5.8252, 2.9126][..],
+        ),
+        StatType::FlatAtk => (
+            &[30.0, 40.0, 50.0, 60.0][..],
+            &[6.7961, 52.4272, 37.8641, 2.9126][..],
+        ),
+        StatType::FlatDef => (
+            &[40.0, 50.0, 60.0, 70.0][..],
+            &[14.5631, 44.6602, 32.0388, 8.7379][..],
+        ),
+    };
+    let total_weight = weights.iter().sum();
+    (values, weights, total_weight)
 }
 
 fn weighted_random_choice(stat_type: StatType) -> f64 {
-    let values = get_substat_values(stat_type);
-    let idx = fastrand::usize(..values.len());
-    values[idx]
+    let (values, weights, total_weight) = get_substat_data(stat_type);
+    let mut random = fastrand::f64() * total_weight;
+    for (i, &w) in weights.iter().enumerate() {
+        if random < w {
+            return values[i];
+        }
+        random -= w;
+    }
+    *values.last().unwrap()
 }
 
 const EXP_TABLE: [usize; 5] = [4400, 12100, 23100, 39500, 63500];
