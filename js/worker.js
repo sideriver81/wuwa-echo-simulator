@@ -1,24 +1,59 @@
-import { runSimulation, runTransducerSimulation } from './simulator.js';
+let useWasm = false;
+let runSimulationWasm, runTransducerSimulationWasm;
+let runSimulationJS, runTransducerSimulationJS;
 
-self.onmessage = function(e) {
+async function initEngines() {
+    try {
+        const wasmModule = await import('./wasm/rust_engine.js');
+        const initWasm = wasmModule.default;
+        await initWasm();
+        runSimulationWasm = wasmModule.run_simulation_wasm;
+        runTransducerSimulationWasm = wasmModule.run_transducer_simulation_wasm;
+        useWasm = true;
+        console.log("Rust Wasm engine initialized successfully.");
+    } catch (e) {
+        console.warn("Wasm engine failed to initialize, falling back to JS engine.", e);
+        const jsModule = await import('./simulator.js');
+        runSimulationJS = jsModule.runSimulation;
+        runTransducerSimulationJS = jsModule.runTransducerSimulation;
+        useWasm = false;
+    }
+}
+
+const engineReady = initEngines();
+
+self.onmessage = async function(e) {
+    await engineReady;
+    
     const settings = e.data;
+    
+    // Wasm用のシード値を生成 (BigInt = Rustのu64)
+    let seed = 0n;
+    if (useWasm) {
+        seed = BigInt(Date.now() + Math.floor(Math.random() * 1000000));
+    }
     
     try {
         let result;
+        const progressCallback = (progress) => {
+            self.postMessage({
+                type: 'progress',
+                value: progress
+            });
+        };
+
         if (settings.mode === 'transducer') {
-            result = runTransducerSimulation(settings, (progress) => {
-                self.postMessage({
-                    type: 'progress',
-                    value: progress
-                });
-            });
+            if (useWasm) {
+                result = runTransducerSimulationWasm(settings, progressCallback, seed);
+            } else {
+                result = runTransducerSimulationJS(settings, progressCallback);
+            }
         } else {
-            result = runSimulation(settings, (progress) => {
-                self.postMessage({
-                    type: 'progress',
-                    value: progress
-                });
-            });
+            if (useWasm) {
+                result = runSimulationWasm(settings, progressCallback, seed);
+            } else {
+                result = runSimulationJS(settings, progressCallback);
+            }
         }
         
         self.postMessage({
@@ -26,9 +61,10 @@ self.onmessage = function(e) {
             result: result
         });
     } catch (error) {
+        console.error(error);
         self.postMessage({
             type: 'error',
-            message: error.message
+            message: error.message || String(error)
         });
     }
 };
