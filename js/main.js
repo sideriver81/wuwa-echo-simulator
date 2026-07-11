@@ -9,7 +9,7 @@ let currentMode = 'normal'; // 'normal' or 'transducer'
 // UI初期化
 function initUI() {
     updateTexts();
-    generateSubstatInputs();
+    setMode(currentMode);
     
     // イベントリスナー設定
     document.getElementById('langToggle').addEventListener('click', toggleLanguage);
