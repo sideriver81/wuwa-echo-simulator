@@ -124,21 +124,23 @@ function setMode(mode) {
         reqTotalLabel.setAttribute('data-i18n', 'requiredTotalCount_transducer');
     }
     
-    updateTexts();
-    generateSubstatInputs();
-    
-    // チャート軸の表示切り替え
-    document.getElementById('optTuners').style.display = mode === 'normal' ? '' : 'none';
-    document.getElementById('optEchos').style.display = mode === 'normal' ? '' : 'none';
-    document.getElementById('optRecords').style.display = mode === 'normal' ? '' : 'none';
-    document.getElementById('optTransducers').style.display = mode === 'transducer' ? '' : 'none';
-    
-    // 選択状態のリセット
-    if (mode === 'transducer') {
-        document.getElementById('chartXAxis').value = 'transducers';
+    // チャート軸の表示切替 (スマートフォンのネイティブセレクト対応のためDOMごと再生成)
+    const chartXAxis = document.getElementById('chartXAxis');
+    chartXAxis.innerHTML = '';
+    if (mode === 'normal') {
+        chartXAxis.insertAdjacentHTML('beforeend', '<option value="tuners" data-i18n="chart_tuners" id="optTuners">Tuners</option>');
+        chartXAxis.insertAdjacentHTML('beforeend', '<option value="echos" data-i18n="chart_echos" id="optEchos">Echoes</option>');
+        chartXAxis.insertAdjacentHTML('beforeend', '<option value="records" data-i18n="chart_records" id="optRecords">Premium Sealed Tubes</option>');
+        chartXAxis.value = 'tuners';
     } else {
-        document.getElementById('chartXAxis').value = 'tuners';
+        chartXAxis.insertAdjacentHTML('beforeend', '<option value="transducers" data-i18n="chart_transducers" id="optTransducers">Transducers</option>');
+        chartXAxis.value = 'transducers';
     }
+    
+    // 追加したオプションに翻訳を適用
+    updateTexts();
+    
+    generateSubstatInputs();
     
     // 結果表示のリセット
     document.getElementById('resultsSection').style.display = 'none';
@@ -355,7 +357,8 @@ function handleRunSimulation() {
             });
         } else if (typeSelect.value === 'locked' && currentMode === 'transducer') {
             lockedTargets.push({
-                type: type
+                type: type,
+                minValue: 0
             });
         }
     });
