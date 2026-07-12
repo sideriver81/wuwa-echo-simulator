@@ -555,6 +555,7 @@ function handleRunSimulation() {
                 }
             } else if (data.type === 'done') {
                 const result = data.result;
+                result.executionTimeMs = performance.now() - startTime;
                 result.exactProb = exactProb;
                 result.baseProb = baseProb;
                 result.settings = settings; // クリップボードコピー用に設定を保存
@@ -580,6 +581,7 @@ function handleRunSimulation() {
             }
         };
         
+        let startTime = performance.now();
         currentWorker.postMessage(settings);
     } catch (e) {
         console.error("Worker initialization failed, falling back to main thread:", e);
@@ -587,11 +589,13 @@ function handleRunSimulation() {
         setTimeout(() => {
             try {
                 let result;
+                let startTime = performance.now();
                 if (settings.mode === 'transducer') {
                     result = runTransducerSimulation(settings, () => {});
                 } else {
                     result = runSimulation(settings, () => {});
                 }
+                result.executionTimeMs = performance.now() - startTime;
                 result.exactProb = exactProb;
                 result.baseProb = baseProb;
                 result.settings = settings;
@@ -701,7 +705,12 @@ function displayResults(result) {
         if (pTuners) pTuners.style.display = 'none';
         if (pTransducers) pTransducers.style.display = 'none';
     }
+    
+    document.getElementById('resExecTime').textContent = result.executionTimeMs 
+        ? `(${t('exec_time') || '計算時間'}: ${(result.executionTimeMs / 1000).toFixed(3)}s)` 
+        : '';
 
+    // チャート描画
     drawChart(result);
     
     // スクロール

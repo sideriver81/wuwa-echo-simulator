@@ -71,7 +71,9 @@ const translations = {
         chart_records: "特級レコード",
         chart_tuners: "チュナ",
         chart_transducers: "周波数調整器",
-        chart_frequency: "出現回数",
+        chart_frequency: "頻度",
+
+        exec_time: "計算時間",
 
         strategy: "育成続行条件",
         strategy_desc: "指定したレベルの時点で、条件を満たしていなければリサイクルします。※条件を厳しくすると、そのまま育てていれば成功したかもしれない音骸も捨てるため、最終的な達成確率は下がります。",
@@ -93,7 +95,8 @@ const translations = {
         copied: "クリップボードにコピーしました",
         error_no_target: "目標のサブステータスを少なくとも1つ選択してください。",
         feedback_link: "不具合報告・ご意見はこちら (Googleフォーム)",
-        github_link: "GitHub (ソースコード・使い方)"
+        github_link: "GitHub (ソースコード・使い方)",
+        btn_close: "閉じる"
     },
     en: {
         title: "Wuthering Waves Echo Upgrade Simulator",
@@ -166,6 +169,8 @@ const translations = {
         chart_tuners: "Tuners",
         chart_transducers: "Transducers",
         chart_frequency: "Frequency",
+
+        exec_time: "Exec Time",
 
         strategy: "Upgrade Continuation Conditions",
         strategy_desc: "Recycle the Echo if it doesn't meet the condition at the specified level. *Note: Strict conditions will drop potentially successful Echoes, lowering the final probability.",
