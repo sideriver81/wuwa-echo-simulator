@@ -60,7 +60,7 @@ function initUI() {
                 csvContent += `${i + 1},${h.transducers}\n`;
             });
         } else {
-            csvContent += "Run,Echos,Records,Tuners\n";
+            csvContent += "Run,Echos,Premium Sealed Tubes,Tuners\n";
             currentResultData.history.forEach((h, i) => {
                 csvContent += `${i + 1},${h.echos},${h.records},${h.tuners}\n`;
             });
