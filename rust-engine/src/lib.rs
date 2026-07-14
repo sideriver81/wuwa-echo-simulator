@@ -230,7 +230,7 @@ pub fn run_simulation_wasm(settings_val: JsValue, progress_callback: &js_sys::Fu
     }
     
     let target_must_count = settings.must_have_targets.len();
-    let progress_update_interval = 100.max(target_reach_count / 100);
+    let progress_update_interval = (target_reach_count / 100).max(1);
     
     let mut history = Vec::with_capacity(target_reach_count);
     let mut total_echos: f64 = 0.0;
@@ -448,7 +448,7 @@ pub fn run_transducer_simulation_wasm(settings_val: JsValue, progress_callback: 
     }
     
     let target_must_count = settings.must_have_targets.len();
-    let progress_update_interval = 100.max(target_reach_count / 100);
+    let progress_update_interval = (target_reach_count / 100).max(1);
     
     let mut history = Vec::with_capacity(target_reach_count);
     let mut total_transducers: f64 = 0.0;

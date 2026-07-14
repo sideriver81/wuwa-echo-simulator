@@ -234,8 +234,8 @@ export function runSimulation(settings, progressCallback) {
     
     const targetMustCount = mustHaveTargets.length;
     
-    // 進捗通知の頻度を計算（最低でも100回に1回、最大で全体の1%ごと）
-    const progressUpdateInterval = Math.max(100, Math.floor(targetReachCount / 100));
+    // 進捗通知の頻度を計算（最低でも全体の1%ごと、ただし100回以下の場合は1回ごと）
+    const progressUpdateInterval = Math.max(1, Math.floor(targetReachCount / 100));
 
     for (let run = 0; run < targetReachCount; run++) {
         let echosConsumed = 0;
@@ -422,7 +422,7 @@ export function runTransducerSimulation(settings, progressCallback) {
     
     const targetMustCount = mustHaveTargets.length;
     
-    const progressUpdateInterval = Math.max(100, Math.floor(targetReachCount / 100));
+    const progressUpdateInterval = Math.max(1, Math.floor(targetReachCount / 100));
     
     for (let run = 1; run <= targetReachCount; run++) {
         let runTransducers = 0;
