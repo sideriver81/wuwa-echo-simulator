@@ -31,7 +31,7 @@ Wuthering Waves Echo Upgrade Simulator is a web-based simulator that calculates 
 🌐 **[Simulate Here (Click Here)](https://wuwa-echo-simulator.pages.dev/)**
 
 ## Main Features
-*   **Echo Upgrade Mode**: Calculates the required Echoes, Records, and Tuners to obtain an Echo with the specified conditions. You can also set continuation conditions for each level.
+*   **Echo Upgrade Mode**: Calculates the required Echoes, Premium Sealed Tubes, and Tuners to obtain an Echo with the specified conditions. You can also set continuation conditions for each level.
 *   **Transducer Mode**: Calculates the required Transducers for sub-stat re-rolling.
 *   **Multilingual Support**: Supports both Japanese and English.
 
