@@ -95,6 +95,7 @@ const translations = {
         copied: "クリップボードにコピーしました",
         error_no_target: "目標のサブステータスを少なくとも1つ選択してください。",
         feedback_link: "不具合報告・ご意見はこちら (Googleフォーム)",
+        x_link: "作者X (Twitter)",
         github_link: "GitHub (ソースコード・使い方)",
         btn_close: "閉じる"
     },
@@ -192,6 +193,7 @@ const translations = {
         copied: "Copied to clipboard",
         error_no_target: "Please select at least one target sub-stat.",
         feedback_link: "Report Bug / Feedback (Google Forms)",
+        x_link: "Developer's X (Twitter)",
         github_link: "GitHub (Source Code & How to Use)"
     }
 };
