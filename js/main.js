@@ -4,7 +4,8 @@ import { runSimulation, calculateExactProbability, runTransducerSimulation } fro
 
 let currentChart = null;
 let currentWorker = null;
-let currentMode = 'normal'; // 'normal' or 'transducer'
+let currentMode = 'normal';
+const formatNum = (val) => val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 'normal' or 'transducer'
 
 // UI初期化
 function initUI() {
@@ -656,9 +657,9 @@ function displayResults(result) {
             if (labelExactProb) labelExactProb.setAttribute('data-i18n', 'res_exactProbTitle_transducer');
         }
         
-        document.getElementById('resAvgEchos').textContent = Math.round(result.avgEchos).toLocaleString();
-        document.getElementById('resAvgRecords').textContent = Math.round(result.avgRecords).toLocaleString();
-        document.getElementById('resAvgTuners').textContent = Math.round(result.avgTuners).toLocaleString();
+        document.getElementById('resAvgEchos').textContent = formatNum(result.avgEchos);
+        document.getElementById('resAvgRecords').textContent = formatNum(result.avgRecords);
+        document.getElementById('resAvgTuners').textContent = formatNum(result.avgTuners);
     } else {
         if (boxAvgEchos) boxAvgEchos.style.display = 'none';
         if (boxAvgRecords) boxAvgRecords.style.display = 'none';
@@ -667,7 +668,7 @@ function displayResults(result) {
         if (boxBaseProb) boxBaseProb.style.display = 'none';
         if (labelExactProb) labelExactProb.setAttribute('data-i18n', 'res_exactProbTitle_transducer');
         
-        document.getElementById('resAvgTransducers').textContent = Math.round(result.avgTransducers).toLocaleString();
+        document.getElementById('resAvgTransducers').textContent = formatNum(result.avgTransducers);
     }
     
     // Update texts manually for the label changes
@@ -682,13 +683,13 @@ function displayResults(result) {
     if (result.percentiles) {
         if (currentMode === 'normal') {
             pEchos.style.display = 'block';
-            pEchos.textContent = `${t('stat_median')}: ${Math.round(result.percentiles.echos.median).toLocaleString()} | ${t('stat_p95')}: ${Math.round(result.percentiles.echos.p95).toLocaleString()}`;
+            pEchos.textContent = `${t('stat_median')}: ${formatNum(result.percentiles.echos.median)} | ${t('stat_p95')}: ${formatNum(result.percentiles.echos.p95)}`;
             
             pRecords.style.display = 'block';
-            pRecords.textContent = `${t('stat_median')}: ${Math.round(result.percentiles.records.median).toLocaleString()} | ${t('stat_p95')}: ${Math.round(result.percentiles.records.p95).toLocaleString()}`;
+            pRecords.textContent = `${t('stat_median')}: ${formatNum(result.percentiles.records.median)} | ${t('stat_p95')}: ${formatNum(result.percentiles.records.p95)}`;
             
             pTuners.style.display = 'block';
-            pTuners.textContent = `${t('stat_median')}: ${Math.round(result.percentiles.tuners.median).toLocaleString()} | ${t('stat_p95')}: ${Math.round(result.percentiles.tuners.p95).toLocaleString()}`;
+            pTuners.textContent = `${t('stat_median')}: ${formatNum(result.percentiles.tuners.median)} | ${t('stat_p95')}: ${formatNum(result.percentiles.tuners.p95)}`;
             
             if (pTransducers) pTransducers.style.display = 'none';
         } else {
@@ -697,7 +698,7 @@ function displayResults(result) {
             if (pTuners) pTuners.style.display = 'none';
             
             pTransducers.style.display = 'block';
-            pTransducers.textContent = `${t('stat_median')}: ${Math.round(result.percentiles.transducers.median).toLocaleString()} | ${t('stat_p95')}: ${Math.round(result.percentiles.transducers.p95).toLocaleString()}`;
+            pTransducers.textContent = `${t('stat_median')}: ${formatNum(result.percentiles.transducers.median)} | ${t('stat_p95')}: ${formatNum(result.percentiles.transducers.p95)}`;
         }
     } else {
         if (pEchos) pEchos.style.display = 'none';
@@ -1047,9 +1048,9 @@ function copyResults() {
             const pR = currentResultData.percentiles.records;
             const pT = currentResultData.percentiles.tuners;
             percentileText = `\n[${t('stat_median')} / ${t('stat_p95')}]\n` +
-                             `- ${t('chart_echos')}: ${Math.round(pE.median).toLocaleString()} / ${Math.round(pE.p95).toLocaleString()}\n` +
-                             `- ${t('chart_records')}: ${Math.round(pR.median).toLocaleString()} / ${Math.round(pR.p95).toLocaleString()}\n` +
-                             `- ${t('chart_tuners')}: ${Math.round(pT.median).toLocaleString()} / ${Math.round(pT.p95).toLocaleString()}`;
+                             `- ${t('chart_echos')}: ${formatNum(pE.median)} / ${formatNum(pE.p95)}\n` +
+                             `- ${t('chart_records')}: ${formatNum(pR.median)} / ${formatNum(pR.p95)}\n` +
+                             `- ${t('chart_tuners')}: ${formatNum(pT.median)} / ${formatNum(pT.p95)}`;
         }
         
         const hasStrategy = s.customThresholds && s.customThresholds.some(th => th.mustCount > 0 || th.mustValidCount > 0);
@@ -1080,7 +1081,7 @@ function copyResults() {
         if (currentResultData && currentResultData.percentiles && currentResultData.percentiles.transducers) {
             const pTr = currentResultData.percentiles.transducers;
             percentileText = `\n[${t('stat_median')} / ${t('stat_p95')}]\n` +
-                             `- ${t('chart_transducers')}: ${Math.round(pTr.median).toLocaleString()} / ${Math.round(pTr.p95).toLocaleString()}`;
+                             `- ${t('chart_transducers')}: ${formatNum(pTr.median)} / ${formatNum(pTr.p95)}`;
         }
         
         resultText = `[${t('targetSettings')}]\n` +
