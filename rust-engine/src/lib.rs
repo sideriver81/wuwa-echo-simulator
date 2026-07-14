@@ -23,6 +23,8 @@ pub struct CustomThreshold {
 #[derive(Deserialize, Clone)]
 pub struct Settings {
     pub mode: Option<String>,
+    #[serde(rename = "finishToLevel25")]
+    pub finish_to_level_25: Option<bool>,
     #[serde(rename = "mustHaveTargets")]
     pub must_have_targets: Vec<TargetStat>,
     #[serde(rename = "validTargets")]
@@ -289,46 +291,50 @@ pub fn run_simulation_wasm(settings_val: JsValue, progress_callback: &js_sys::Fu
                 let stat_type = current_available.swap_remove(idx); // O(1) removal
                 let stat_value = weighted_random_choice(stat_type);
                 
-                if let Some(min_val) = must_array[stat_type as usize] {
-                    if stat_value >= min_val {
-                        must_achieved_count += 1;
-                    } else {
-                        impossible = true;
+                if !target_reached {
+                    if let Some(min_val) = must_array[stat_type as usize] {
+                        if stat_value >= min_val {
+                            must_achieved_count += 1;
+                        } else {
+                            impossible = true;
+                        }
+                    } else if let Some(min_val) = valid_array[stat_type as usize] {
+                        if stat_value >= min_val {
+                            valid_achieved_count += 1;
+                        }
                     }
-                } else if let Some(min_val) = valid_array[stat_type as usize] {
-                    if stat_value >= min_val {
-                        valid_achieved_count += 1;
+                    
+                    if impossible { break; }
+                    
+                    if must_achieved_count == target_must_count && (must_achieved_count + valid_achieved_count) >= required_total_count {
+                        target_reached = true;
+                        if settings.finish_to_level_25 == Some(false) {
+                            break;
+                        }
                     }
-                }
-                
-                if impossible { break; }
-                
-                if must_achieved_count == target_must_count && (must_achieved_count + valid_achieved_count) >= required_total_count {
-                    target_reached = true;
-                    break;
-                }
-                
-                let remaining_slots = 5 - (i + 1);
-                
-                if target_must_count.saturating_sub(must_achieved_count) > remaining_slots { break; }
-                if required_total_count.saturating_sub(must_achieved_count + valid_achieved_count) > remaining_slots { break; }
-                
-                if let Some(ref thresholds) = settings.custom_thresholds {
-                    if i < thresholds.len() {
-                        if let Some(ref t) = thresholds[i] {
-                            let total_achieved = must_achieved_count + valid_achieved_count;
-                            let mut pass = true;
-                            if t.must_count > 0 && t.must_valid_count > 0 {
-                                if t.op == "or" {
-                                    pass = must_achieved_count >= t.must_count || total_achieved >= t.must_valid_count;
+                    
+                    let remaining_slots = 5 - (i + 1);
+                    
+                    if target_must_count.saturating_sub(must_achieved_count) > remaining_slots { break; }
+                    if required_total_count.saturating_sub(must_achieved_count + valid_achieved_count) > remaining_slots { break; }
+                    
+                    if let Some(ref thresholds) = settings.custom_thresholds {
+                        if i < thresholds.len() {
+                            if let Some(ref t) = thresholds[i] {
+                                let total_achieved = must_achieved_count + valid_achieved_count;
+                                let mut pass = true;
+                                if t.must_count > 0 && t.must_valid_count > 0 {
+                                    if t.op == "or" {
+                                        pass = must_achieved_count >= t.must_count || total_achieved >= t.must_valid_count;
+                                    } else {
+                                        pass = must_achieved_count >= t.must_count && total_achieved >= t.must_valid_count;
+                                    }
                                 } else {
-                                    pass = must_achieved_count >= t.must_count && total_achieved >= t.must_valid_count;
+                                    if t.must_count > 0 && must_achieved_count < t.must_count { pass = false; }
+                                    if t.must_valid_count > 0 && total_achieved < t.must_valid_count { pass = false; }
                                 }
-                            } else {
-                                if t.must_count > 0 && must_achieved_count < t.must_count { pass = false; }
-                                if t.must_valid_count > 0 && total_achieved < t.must_valid_count { pass = false; }
+                                if !pass { break; }
                             }
-                            if !pass { break; }
                         }
                     }
                 }

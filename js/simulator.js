@@ -289,51 +289,56 @@ export function runSimulation(settings, progressCallback) {
                 currentAvailable.splice(stat.indexToRemove, 1); // O(1) array removal
                 
                 // 判定 O(1)
-                if (mustMap[stat.type] !== undefined) {
-                    if (stat.value >= mustMap[stat.type]) {
-                        mustAchievedCount++;
-                    } else {
-                        impossible = true; // 必須ステータスが出たが値が足りない
-                    }
-                } else if (validMap[stat.type] !== undefined) {
-                    if (stat.value >= validMap[stat.type]) {
-                        validAchievedCount++;
-                    }
-                }
-                
-                if (impossible) break;
-
-                // 目標達成チェック
-                if (mustAchievedCount === targetMustCount && (mustAchievedCount + validAchievedCount) >= requiredTotalCount) {
-                    targetReached = true;
-                    break;
-                }
-
-                const remainingSlots = 5 - (i + 1);
-                
-                // スマート戦略チェック
-                if ((targetMustCount - mustAchievedCount) > remainingSlots) break;
-                if ((requiredTotalCount - (mustAchievedCount + validAchievedCount)) > remainingSlots) break;
-                
-                // カスタム見切り設定チェック
-                if (customThresholds) {
-                    const threshold = customThresholds[i];
-                    if (threshold) {
-                        let pass = true;
-                        const totalAchieved = mustAchievedCount + validAchievedCount;
-                        if (threshold.mustCount > 0 && threshold.mustValidCount > 0) {
-                            if (threshold.op === 'or') {
-                                pass = (mustAchievedCount >= threshold.mustCount) || (totalAchieved >= threshold.mustValidCount);
-                            } else {
-                                pass = (mustAchievedCount >= threshold.mustCount) && (totalAchieved >= threshold.mustValidCount);
-                            }
+                if (!targetReached) {
+                    if (mustMap[stat.type] !== undefined) {
+                        if (stat.value >= mustMap[stat.type]) {
+                            mustAchievedCount++;
                         } else {
-                            if (threshold.mustCount > 0 && mustAchievedCount < threshold.mustCount) pass = false;
-                            if (threshold.mustValidCount > 0 && totalAchieved < threshold.mustValidCount) pass = false;
+                            impossible = true; // 必須ステータスが出たが値が足りない
                         }
-                        
-                        if (!pass) {
-                            break; // Abandoned
+                    } else if (validMap[stat.type] !== undefined) {
+                        if (stat.value >= validMap[stat.type]) {
+                            validAchievedCount++;
+                        }
+                    }
+                    
+                    if (impossible) break;
+
+                    // 目標達成チェック
+                    if (mustAchievedCount === targetMustCount && (mustAchievedCount + validAchievedCount) >= requiredTotalCount) {
+                        targetReached = true;
+                        // デフォルトはtrue（旧挙動にしたい場合は明示的にfalseを渡す）
+                        if (settings.finishToLevel25 === false) {
+                            break;
+                        }
+                    }
+
+                    const remainingSlots = 5 - (i + 1);
+                    
+                    // スマート戦略チェック
+                    if ((targetMustCount - mustAchievedCount) > remainingSlots) break;
+                    if ((requiredTotalCount - (mustAchievedCount + validAchievedCount)) > remainingSlots) break;
+                    
+                    // カスタム見切り設定チェック
+                    if (customThresholds) {
+                        const threshold = customThresholds[i];
+                        if (threshold) {
+                            let pass = true;
+                            const totalAchieved = mustAchievedCount + validAchievedCount;
+                            if (threshold.mustCount > 0 && threshold.mustValidCount > 0) {
+                                if (threshold.op === 'or') {
+                                    pass = (mustAchievedCount >= threshold.mustCount) || (totalAchieved >= threshold.mustValidCount);
+                                } else {
+                                    pass = (mustAchievedCount >= threshold.mustCount) && (totalAchieved >= threshold.mustValidCount);
+                                }
+                            } else {
+                                if (threshold.mustCount > 0 && mustAchievedCount < threshold.mustCount) pass = false;
+                                if (threshold.mustValidCount > 0 && totalAchieved < threshold.mustValidCount) pass = false;
+                            }
+                            
+                            if (!pass) {
+                                break; // Abandoned
+                            }
                         }
                     }
                 }

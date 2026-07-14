@@ -51,9 +51,13 @@
             <!-- シミュレーション設定 -->
             <section class="card">
                 <h2 data-i18n="simulationSettings">シミュレーション設定</h2>
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 16px;">
                     <label data-i18n="targetReachCount">目標達成回数（試行回数）</label>
                     <input type="number" inputmode="numeric" pattern="[0-9]*" id="targetReachCount" value="1000" min="1" max="100000" style="background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; width: 120px; font-size: 1rem;">
+                </div>
+                <div class="form-group" id="finishTo25Group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="settingFinishToLevel25" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-color);">
+                    <label for="settingFinishToLevel25" data-i18n="setting_finishToLevel25" style="cursor: pointer; margin-bottom: 0;">目標達成後もLv.25まで育成を続ける</label>
                 </div>
             </section>
 

@@ -112,16 +112,19 @@ function setMode(mode) {
     const tabTransducer = document.getElementById('tabTransducer');
     const strategySection = document.getElementById('strategySection');
     const reqTotalLabel = document.querySelector('label[data-i18n^="requiredTotalCount"]');
+    const finishTo25Group = document.getElementById('finishTo25Group');
     
     if (mode === 'normal') {
         tabNormal.classList.add('active');
         tabTransducer.classList.remove('active');
         strategySection.style.display = 'block';
+        if(finishTo25Group) finishTo25Group.style.display = 'flex';
         reqTotalLabel.setAttribute('data-i18n', 'requiredTotalCount');
     } else {
         tabNormal.classList.remove('active');
         tabTransducer.classList.add('active');
         strategySection.style.display = 'none';
+        if(finishTo25Group) finishTo25Group.style.display = 'none';
         reqTotalLabel.setAttribute('data-i18n', 'requiredTotalCount_transducer');
     }
     
@@ -475,6 +478,7 @@ function handleRunSimulation() {
 
     const settings = {
         mode: currentMode,
+        finishToLevel25: document.getElementById('settingFinishToLevel25') ? document.getElementById('settingFinishToLevel25').checked : true,
         mustHaveTargets,
         validTargets,
         lockedTargets,
@@ -1062,10 +1066,14 @@ function copyResults() {
             probLines = `- ${t('res_exactProbTitle_transducer') || t('res_exactProbTitle')} ${prob}\n`;
         }
         
+        const finishLevel25Status = s.finishToLevel25 ? (getLanguage() === 'ja' ? 'オン' : 'On') : (getLanguage() === 'ja' ? 'オフ' : 'Off');
+        const finishLevel25Text = `- ${t('setting_finishToLevel25')}: ${finishLevel25Status}\n`;
+        
         resultText = `[${t('targetSettings')}]\n` +
                      `- ${t('optMust')}: ${mustStats}\n` +
                      `- ${t('optValid')}: ${validStats}\n` +
                      `- ${t('requiredTotalCount')}: ${s.requiredTotalCount}\n` +
+                     finishLevel25Text +
                      `[${t('strategy')}]\n` +
                      `${thresholdText}` +
                      `[${t('results')}]\n` +
