@@ -513,19 +513,7 @@ function handleRunSimulation() {
         return;
     }
     
-    // 確率が極端に低い場合（0.01%未満 = 1万個に1個未満）は警告を出す
-    if (exactProb < 0.0001) {
-        const probPercent = (exactProb * 100).toFixed(4);
-        const approxCount = Math.round(1 / exactProb).toLocaleString();
-        
-        const msg = getLanguage() === 'ja'
-            ? `警告: 目標条件を満たす音骸の出現率は非常に低いです（約 ${probPercent}%、約 ${approxCount}個に1個）。\nシミュレーションに非常に時間がかかる可能性がありますが、続行しますか？`
-            : `Warning: The probability is very low (approx. ${probPercent}%, 1 in ${approxCount}).\nThe simulation may take a very long time. Do you want to continue?`;
-            
-        if (!confirm(msg)) {
-            return;
-        }
-    }
+
     
     // ボタンをローディング状態にする
     const btn = document.getElementById('runBtn');

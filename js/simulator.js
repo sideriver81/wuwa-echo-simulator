@@ -213,143 +213,236 @@ function getPercentile(sortedArray, p) {
 
 export function runSimulation(settings, progressCallback) {
     const { mustHaveTargets, validTargets, requiredTotalCount, targetReachCount, customThresholds } = settings;
-
+    
     const results = {
-        history: [], // Array of { echos, records, tuners } for each successful run
+        history: [],
         avgEchos: 0,
         avgRecords: 0,
         avgTuners: 0
     };
-
+    
+    const targetMustCount = mustHaveTargets.length;
+    const progressUpdateInterval = Math.max(1, Math.floor(targetReachCount / 100));
+    
+    const mustArray = new Array(13).fill(null);
+    for (const t of mustHaveTargets) {
+        const typeIdx = SUBSTAT_TYPES.indexOf(t.type);
+        if (typeIdx !== -1) mustArray[typeIdx] = t.minValue;
+    }
+    
+    const validArray = new Array(13).fill(null);
+    for (const t of validTargets) {
+        const typeIdx = SUBSTAT_TYPES.indexOf(t.type);
+        if (typeIdx !== -1) validArray[typeIdx] = t.minValue;
+    }
+    
+    const pMustPass = new Array(13).fill(0);
+    const pValidPass = new Array(13).fill(0);
+    for (let k = 0; k < 13; k++) {
+        const type = SUBSTAT_TYPES[k];
+        const data = SUBSTAT_PREPROCESSED[type];
+        if (mustArray[k] !== null) {
+            let passW = 0;
+            for (const item of data.values) {
+                if (item.value >= mustArray[k]) passW += item.weight;
+            }
+            pMustPass[k] = passW / data.totalWeight;
+        }
+        if (validArray[k] !== null) {
+            let passW = 0;
+            for (const item of data.values) {
+                if (item.value >= validArray[k]) passW += item.weight;
+            }
+            pValidPass[k] = passW / data.totalWeight;
+        }
+    }
+    
+    const finishToLevel25 = settings.finishToLevel25 === true;
+    
+    let currentStates = new Map();
+    currentStates.set(0, 1.0);
+    
+    const successProbs = [0, 0, 0, 0, 0];
+    const failProbs = [0, 0, 0, 0, 0];
+    
+    for (let step = 0; step < 5; step++) {
+        const nextStates = new Map();
+        const pDraw = 1.0 / (13.0 - step);
+        const remaining = 5 - (step + 1);
+        
+        for (const [stateKey, prob] of currentStates.entries()) {
+            const mask = stateKey & 0x1FFF;
+            const mustC = (stateKey >> 13) & 0x7;
+            const validC = (stateKey >> 16) & 0x7;
+            const targetReached = ((stateKey >> 19) & 0x1) === 1;
+            
+            for (let k = 0; k < 13; k++) {
+                if ((mask & (1 << k)) === 0) {
+                    const nextMask = mask | (1 << k);
+                    const pDrawTotal = prob * pDraw;
+                    const isMust = mustArray[k] !== null;
+                    const isValid = validArray[k] !== null;
+                    const pPass = isMust ? pMustPass[k] : (isValid ? pValidPass[k] : 0.0);
+                    
+                    const passes = [true, false];
+                    for (const statPass of passes) {
+                        const branchProb = statPass ? pPass : (1.0 - pPass);
+                        if (branchProb <= 0.0) continue;
+                        if (!isMust && !isValid && statPass) continue;
+                        if (!isMust && !isValid && !statPass && branchProb !== 1.0) continue;
+                        
+                        let nMust = mustC;
+                        let nValid = validC;
+                        let nReached = targetReached;
+                        let nImpossible = false;
+                        
+                        if (!nReached) {
+                            if (isMust) {
+                                if (statPass) nMust++;
+                                else nImpossible = true;
+                            } else if (isValid) {
+                                if (statPass) nValid++;
+                            }
+                        }
+                        
+                        if (!nImpossible && !nReached && nMust >= targetMustCount && (nMust + nValid) >= requiredTotalCount) {
+                            nReached = true;
+                            if (!finishToLevel25) {
+                                successProbs[step] += pDrawTotal * branchProb;
+                                continue;
+                            }
+                        }
+                        
+                        if (!nReached && !nImpossible) {
+                            let passThresh = true;
+                            if (Math.max(0, targetMustCount - nMust) > remaining) passThresh = false;
+                            if (Math.max(0, requiredTotalCount - (nMust + nValid)) > remaining) passThresh = false;
+                            
+                            if (passThresh && customThresholds && step < customThresholds.length) {
+                                const t = customThresholds[step];
+                                if (t) {
+                                    const mPass = t.mustCount === 0 || nMust >= t.mustCount;
+                                    const vPass = t.mustValidCount === 0 || (nMust + nValid) >= t.mustValidCount;
+                                    if (t.op === 'or') passThresh = mPass || vPass;
+                                    else passThresh = mPass && vPass;
+                                }
+                            }
+                            if (!passThresh) nImpossible = true;
+                        }
+                        
+                        if (nImpossible) {
+                            failProbs[step] += pDrawTotal * branchProb;
+                            continue;
+                        }
+                        
+                        if (step === 4) {
+                            if (nReached) successProbs[4] += pDrawTotal * branchProb;
+                            else failProbs[4] += pDrawTotal * branchProb;
+                            continue;
+                        }
+                        
+                        const nextKey = nextMask | (nMust << 13) | (nValid << 16) | ((nReached ? 1 : 0) << 19);
+                        const prev = nextStates.get(nextKey) || 0.0;
+                        nextStates.set(nextKey, prev + pDrawTotal * branchProb);
+                    }
+                }
+            }
+        }
+        currentStates = nextStates;
+    }
+    
+    let totalSuccessProb = successProbs.reduce((a, b) => a + b, 0);
+    if (totalSuccessProb <= 0.0) return results;
+    
+    let pFailCond = [0, 0, 0, 0, 0];
+    let pSuccCond = [0, 0, 0, 0, 0];
+    const totalFailProb = failProbs.reduce((a, b) => a + b, 0);
+    if (totalFailProb > 0) {
+        for (let i = 0; i < 5; i++) pFailCond[i] = failProbs[i] / totalFailProb;
+    }
+    if (totalSuccessProb > 0) {
+        for (let i = 0; i < 5; i++) pSuccCond[i] = successProbs[i] / totalSuccessProb;
+    }
+    
     let totalEchos = 0;
     let totalRecords = 0;
     let totalTuners = 0;
     
-    // 高速判定用マップの生成 (O(1) lookup)
-    const mustMap = {};
-    for (const t of mustHaveTargets) mustMap[t.type] = t.minValue;
-    
-    const validMap = {};
-    for (const t of validTargets) validMap[t.type] = t.minValue;
-    
-    const targetMustCount = mustHaveTargets.length;
-    
-    // 進捗通知の頻度を計算（最低でも全体の1%ごと、ただし100回以下の場合は1回ごと）
-    const progressUpdateInterval = Math.max(1, Math.floor(targetReachCount / 100));
-
-    for (let run = 0; run < targetReachCount; run++) {
-        let echosConsumed = 0;
-        let recordsConsumed = 0;
-        let tunersConsumed = 0;
+    for (let run = 1; run <= targetReachCount; run++) {
+        let r = Math.random();
+        if (r <= 0) r = 1e-10;
         
-        let recycledExp = 0;
-        let recycledTuners = 0;
+        const nFailures = totalSuccessProb >= 1.0 ? 0 : Math.floor(Math.log(r) / Math.log(1.0 - totalSuccessProb));
         
-        let targetReached = false;
-
-        while (!targetReached) {
-            echosConsumed++;
-            
-            let currentExpUsed = 0;
-            let currentTunersUsed = 0;
-            
-            // 利用可能なステータス
-            let currentAvailable = SUBSTAT_TYPES.slice();
-            
-            let mustAchievedCount = 0;
-            let validAchievedCount = 0;
-            let impossible = false;
-
-            for (let i = 0; i < 5; i++) {
-                // 注: EXP_TABLE[i].exp は、そのレベル「区間」を上げるための必要経験値（累計ではない）
-                // したがって、単純に足し合わせるだけで総消費経験値となる。
-                const expNeeded = EXP_TABLE[i].exp;
-                currentExpUsed += expNeeded;
-                
-                if (recycledExp >= expNeeded) {
-                    recycledExp -= expNeeded;
-                } else {
-                    const diff = expNeeded - recycledExp;
-                    recycledExp = 0;
-                    const recordsNeeded = Math.ceil(diff / RECORD_EXP);
-                    recordsConsumed += recordsNeeded;
-                    recycledExp += (recordsNeeded * RECORD_EXP) - diff;
+        let totalNetExp = 0;
+        let totalNetTuners = 0;
+        
+        let counts = [0, 0, 0, 0, 0];
+        if (nFailures < 100) {
+            for (let k = 0; k < nFailures; k++) {
+                const rF = Math.random();
+                let cum = 0;
+                let fStep = 4;
+                for (let step = 0; step < 5; step++) {
+                    if (pFailCond[step] > 0) {
+                        cum += pFailCond[step];
+                        if (rF <= cum) { fStep = step; break; }
+                    }
                 }
-
-                currentTunersUsed += TUNER_COST_PER_SLOT;
-                if (recycledTuners >= TUNER_COST_PER_SLOT) {
-                    recycledTuners -= TUNER_COST_PER_SLOT;
-                } else {
-                    const diff = TUNER_COST_PER_SLOT - recycledTuners;
-                    recycledTuners = 0;
-                    tunersConsumed += diff;
-                }
-
-                const stat = drawSubstatFromAvailable(currentAvailable);
-                currentAvailable.splice(stat.indexToRemove, 1); // O(1) array removal
-                
-                // 判定 O(1)
-                if (!targetReached) {
-                    if (mustMap[stat.type] !== undefined) {
-                        if (stat.value >= mustMap[stat.type]) {
-                            mustAchievedCount++;
-                        } else {
-                            impossible = true; // 必須ステータスが出たが値が足りない
-                        }
-                    } else if (validMap[stat.type] !== undefined) {
-                        if (stat.value >= validMap[stat.type]) {
-                            validAchievedCount++;
-                        }
-                    }
+                counts[fStep]++;
+            }
+        } else {
+            let remainingN = nFailures;
+            let remainingP = 1.0;
+            for (let step = 0; step < 4; step++) {
+                if (pFailCond[step] > 0 && remainingN > 0 && remainingP > 0) {
+                    const p = pFailCond[step] / remainingP;
+                    const mean = remainingN * p;
+                    const var_ = remainingN * p * (1.0 - p);
                     
-                    if (impossible) break;
-
-                    // 目標達成チェック
-                    if (mustAchievedCount === targetMustCount && (mustAchievedCount + validAchievedCount) >= requiredTotalCount) {
-                        targetReached = true;
-                        // デフォルトはtrue（旧挙動にしたい場合は明示的にfalseを渡す）
-                        if (settings.finishToLevel25 === false) {
-                            break;
-                        }
-                    }
-
-                    const remainingSlots = 5 - (i + 1);
+                    const u1 = Math.max(1e-10, Math.random());
+                    const u2 = Math.random();
+                    const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
                     
-                    // スマート戦略チェック
-                    if ((targetMustCount - mustAchievedCount) > remainingSlots) break;
-                    if ((requiredTotalCount - (mustAchievedCount + validAchievedCount)) > remainingSlots) break;
+                    let sample = Math.round(mean + z0 * Math.sqrt(var_));
+                    if (sample < 0) sample = 0;
+                    if (sample > remainingN) sample = remainingN;
                     
-                    // カスタム見切り設定チェック
-                    if (customThresholds) {
-                        const threshold = customThresholds[i];
-                        if (threshold) {
-                            let pass = true;
-                            const totalAchieved = mustAchievedCount + validAchievedCount;
-                            if (threshold.mustCount > 0 && threshold.mustValidCount > 0) {
-                                if (threshold.op === 'or') {
-                                    pass = (mustAchievedCount >= threshold.mustCount) || (totalAchieved >= threshold.mustValidCount);
-                                } else {
-                                    pass = (mustAchievedCount >= threshold.mustCount) && (totalAchieved >= threshold.mustValidCount);
-                                }
-                            } else {
-                                if (threshold.mustCount > 0 && mustAchievedCount < threshold.mustCount) pass = false;
-                                if (threshold.mustValidCount > 0 && totalAchieved < threshold.mustValidCount) pass = false;
-                            }
-                            
-                            if (!pass) {
-                                break; // Abandoned
-                            }
-                        }
-                    }
+                    counts[step] = sample;
+                    remainingN -= sample;
+                    remainingP -= pFailCond[step];
                 }
             }
-
-            if (!targetReached) {
-                recycledExp += currentExpUsed * RECYCLE_EXP_RATE;
-                recycledTuners += currentTunersUsed * RECYCLE_TUNER_RATE;
-            }
-            
+            counts[4] = remainingN;
         }
+        
+        for (let step = 0; step < 5; step++) {
+            if (counts[step] > 0) {
+                let expCost = 0;
+                for (let i = 0; i <= step; i++) expCost += EXP_TABLE[i].exp;
+                totalNetExp += counts[step] * expCost * (1.0 - RECYCLE_EXP_RATE);
+                totalNetTuners += counts[step] * (step + 1) * TUNER_COST_PER_SLOT * (1.0 - RECYCLE_TUNER_RATE);
+            }
+        }
+        
+        const rS = Math.random();
+        let cum = 0;
+        let sStep = 4;
+        for (let step = 0; step < 5; step++) {
+            if (pSuccCond[step] > 0) {
+                cum += pSuccCond[step];
+                if (rS <= cum) { sStep = step; break; }
+            }
+        }
+        
+        let expCost = 0;
+        for (let i = 0; i <= sStep; i++) expCost += EXP_TABLE[i].exp;
+        totalNetExp += expCost;
+        totalNetTuners += (sStep + 1) * TUNER_COST_PER_SLOT;
+        
+        const recordsConsumed = Math.ceil(totalNetExp / RECORD_EXP);
+        const tunersConsumed = Math.ceil(totalNetTuners);
+        const echosConsumed = nFailures + 1;
         
         results.history.push({
             echos: echosConsumed,
@@ -360,19 +453,18 @@ export function runSimulation(settings, progressCallback) {
         totalEchos += echosConsumed;
         totalRecords += recordsConsumed;
         totalTuners += tunersConsumed;
-
-        if (progressCallback && run % progressUpdateInterval === 0) {
+        
+        if (run % progressUpdateInterval === 0 && progressCallback) {
             progressCallback(run / targetReachCount);
         }
     }
-
+    
     if (targetReachCount > 0) {
         results.avgEchos = totalEchos / targetReachCount;
         results.avgRecords = totalRecords / targetReachCount;
         results.avgTuners = totalTuners / targetReachCount;
     }
     
-    // パーセンタイルの計算
     if (targetReachCount >= 100) {
         const echosArray = results.history.map(h => h.echos).sort((a, b) => a - b);
         const recordsArray = results.history.map(h => h.records).sort((a, b) => a - b);
@@ -402,61 +494,131 @@ export function runTransducerSimulation(settings, progressCallback) {
     
     const results = {
         history: [],
-        avgTransducers: 0,
-        baseProb: settings.baseProb || 0,
-        exactProb: settings.exactProb || 0
+        avgTransducers: 0
     };
     
-    let totalTransducers = 0;
-    const lockedCount = lockedTargets ? lockedTargets.length : 0;
-    
     let costPerRoll = 1;
+    const lockedCount = lockedTargets ? lockedTargets.length : 0;
     if (lockedCount === 3) costPerRoll = 2;
     if (lockedCount === 4) costPerRoll = 3;
     
     const slotsToRoll = 5 - lockedCount;
-    const initialAvailableTypes = SUBSTAT_TYPES.filter(type => !lockedTargets.some(lt => lt.type === type));
     const effectiveRequiredTotal = Math.max(0, requiredTotalCount - lockedCount);
-    
-    // 高速判定用マップの生成 (O(1) lookup)
-    const mustMap = {};
-    for (const t of mustHaveTargets) mustMap[t.type] = t.minValue;
-    
-    const validMap = {};
-    for (const t of validTargets) validMap[t.type] = t.minValue;
-    
     const targetMustCount = mustHaveTargets.length;
-    
     const progressUpdateInterval = Math.max(1, Math.floor(targetReachCount / 100));
     
-    for (let run = 1; run <= targetReachCount; run++) {
-        let runTransducers = 0;
-        let success = false;
-        
-        while (!success) {
-            runTransducers += costPerRoll;
-            
-            let currentAvailable = initialAvailableTypes.slice();
-            let mustAchievedCount = 0;
-            let validAchievedCount = 0;
-            let impossible = false;
-            
-            for (let i = 0; i < slotsToRoll; i++) {
-                const stat = drawSubstatFromAvailable(currentAvailable);
-                currentAvailable.splice(stat.indexToRemove, 1);
-                
-                if (mustMap[stat.type] !== undefined) {
-                    if (stat.value >= mustMap[stat.type]) mustAchievedCount++;
-                    else impossible = true;
-                } else if (validMap[stat.type] !== undefined) {
-                    if (stat.value >= validMap[stat.type]) validAchievedCount++;
-                }
+    const mustArray = new Array(13).fill(null);
+    for (const t of mustHaveTargets) {
+        const typeIdx = SUBSTAT_TYPES.indexOf(t.type);
+        if (typeIdx !== -1) mustArray[typeIdx] = t.minValue;
+    }
+    
+    const validArray = new Array(13).fill(null);
+    for (const t of validTargets) {
+        const typeIdx = SUBSTAT_TYPES.indexOf(t.type);
+        if (typeIdx !== -1) validArray[typeIdx] = t.minValue;
+    }
+    
+    const pMustPass = new Array(13).fill(0);
+    const pValidPass = new Array(13).fill(0);
+    for (let k = 0; k < 13; k++) {
+        const type = SUBSTAT_TYPES[k];
+        const data = SUBSTAT_PREPROCESSED[type];
+        if (mustArray[k] !== null) {
+            let passW = 0;
+            for (const item of data.values) {
+                if (item.value >= mustArray[k]) passW += item.weight;
             }
-            
-            if (!impossible && mustAchievedCount === targetMustCount && (mustAchievedCount + validAchievedCount) >= effectiveRequiredTotal) {
-                success = true;
+            pMustPass[k] = passW / data.totalWeight;
+        }
+        if (validArray[k] !== null) {
+            let passW = 0;
+            for (const item of data.values) {
+                if (item.value >= validArray[k]) passW += item.weight;
+            }
+            pValidPass[k] = passW / data.totalWeight;
+        }
+    }
+    
+    let currentStates = new Map();
+    let initialMask = 0;
+    let lockedWeight = 0;
+    if (lockedTargets) {
+        for (const lt of lockedTargets) {
+            const typeIdx = SUBSTAT_TYPES.indexOf(lt.type);
+            if (typeIdx !== -1) {
+                initialMask |= (1 << typeIdx);
+                lockedWeight += 1.0;
             }
         }
+    }
+    currentStates.set(initialMask, 1.0);
+    
+    for (let step = 0; step < slotsToRoll; step++) {
+        const nextStates = new Map();
+        const pDraw = 1.0 / (13.0 - lockedWeight - step);
+        
+        for (const [stateKey, prob] of currentStates.entries()) {
+            const mask = stateKey & 0x1FFF;
+            const mustC = (stateKey >> 13) & 0x7;
+            const validC = (stateKey >> 16) & 0x7;
+            
+            for (let k = 0; k < 13; k++) {
+                if ((mask & (1 << k)) === 0) {
+                    const nextMask = mask | (1 << k);
+                    const pDrawTotal = prob * pDraw;
+                    const isMust = mustArray[k] !== null;
+                    const isValid = validArray[k] !== null;
+                    const pPass = isMust ? pMustPass[k] : (isValid ? pValidPass[k] : 0.0);
+                    
+                    const passes = [true, false];
+                    for (const statPass of passes) {
+                        const branchProb = statPass ? pPass : (1.0 - pPass);
+                        if (branchProb <= 0.0) continue;
+                        if (!isMust && !isValid && statPass) continue;
+                        if (!isMust && !isValid && !statPass && branchProb !== 1.0) continue;
+                        
+                        let nMust = mustC;
+                        let nValid = validC;
+                        let nImpossible = false;
+                        
+                        if (isMust) {
+                            if (statPass) nMust++;
+                            else nImpossible = true;
+                        } else if (isValid) {
+                            if (statPass) nValid++;
+                        }
+                        
+                        if (!nImpossible) {
+                            const nextKey = nextMask | (nMust << 13) | (nValid << 16);
+                            const prev = nextStates.get(nextKey) || 0.0;
+                            nextStates.set(nextKey, prev + pDrawTotal * branchProb);
+                        }
+                    }
+                }
+            }
+        }
+        currentStates = nextStates;
+    }
+    
+    let totalSuccessProb = 0.0;
+    for (const [stateKey, prob] of currentStates.entries()) {
+        const mustC = (stateKey >> 13) & 0x7;
+        const validC = (stateKey >> 16) & 0x7;
+        if (mustC === targetMustCount && (mustC + validC) >= effectiveRequiredTotal) {
+            totalSuccessProb += prob;
+        }
+    }
+    
+    if (totalSuccessProb <= 0.0) return results;
+    
+    let totalTransducers = 0;
+    for (let run = 1; run <= targetReachCount; run++) {
+        let r = Math.random();
+        if (r <= 0) r = 1e-10;
+        
+        const tries = totalSuccessProb >= 1.0 ? 1.0 : Math.floor(Math.log(r) / Math.log(1.0 - totalSuccessProb)) + 1;
+        const runTransducers = tries * costPerRoll;
         
         totalTransducers += runTransducers;
         results.history.push({ transducers: runTransducers });
@@ -466,9 +628,7 @@ export function runTransducerSimulation(settings, progressCallback) {
         }
     }
     
-    if (targetReachCount > 0) {
-        results.avgTransducers = totalTransducers / targetReachCount;
-    }
+    if (targetReachCount > 0) results.avgTransducers = totalTransducers / targetReachCount;
     
     if (targetReachCount >= 100) {
         const trArray = results.history.map(h => h.transducers).sort((a, b) => a - b);

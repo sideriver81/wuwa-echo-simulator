@@ -229,8 +229,8 @@ h1 {
 }
 
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -436,9 +436,5 @@ h1 {
     
     .substat-controls select {
         flex: 1;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
     }
 }
