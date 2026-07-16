@@ -896,7 +896,7 @@ function drawChart(resultData) {
         lines.push({ value: avgValue, color: '#F0E442', label: t('stat_mean'), dashed: false, width: 1.5, yOffset: 20 });
     }
     if (medianValue !== undefined) {
-        lines.push({ value: medianValue, color: '#56B4E9', label: t('stat_median'), dashed: false, width: 3, yOffset: 0 });
+        lines.push({ value: medianValue, color: '#56B4E9', label: t('stat_median'), dashed: false, width: 1.5, yOffset: 0 });
     }
     if (p95Value !== undefined) {
         lines.push({ value: p95Value, color: '#D55E00', label: t('stat_p95'), dashed: true, width: 2, yOffset: 0 });
