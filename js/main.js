@@ -427,13 +427,18 @@ function handleRunSimulation() {
         }
     }
     
-    const targetReachCount = parseInt(document.getElementById('targetReachCount').value);
+    let targetReachCount = parseInt(document.getElementById('targetReachCount').value);
     
     if (isNaN(targetReachCount) || targetReachCount <= 0) {
         alert(getLanguage() === 'ja'
-            ? "エラー: シミュレーション試行回数は1以上の数値を指定してください。"
+            ? "エラー: シミュレーション試行数を1以上の数値で指定してください。"
             : "Error: Please enter a simulation trial count of 1 or greater.");
         return;
+    }
+    
+    if (targetReachCount > 10000000) {
+        targetReachCount = 10000000;
+        document.getElementById('targetReachCount').value = 10000000;
     }
     
     // 育成続行条件の取得とバリデーション (通常モードのみ)
