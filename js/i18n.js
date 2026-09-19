@@ -77,7 +77,7 @@ const translations = {
         exec_time: "計算時間",
 
         strategy: "育成続行条件",
-        strategy_desc: "指定したレベルの時点で、条件を満たしていなければリサイクルします。※条件を厳しくすると、そのまま育てていれば成功したかもしれない音骸も捨てるため、最終的な達成確率は下がります。",
+        strategy_desc: "指定したレベルの時点で、条件を満たしていなければリサイクルします。育成続行条件を設定していない場合でも、条件達成不可が確定した場合は自動的にリサイクルされます。※条件を厳しくすると、そのまま育てていれば成功したかもしれない音骸も捨てるため、最終的な達成確率は下がります。",
         lvl5: "Lv 5 (枠1)",
         lvl10: "Lv 10 (枠2)",
         lvl15: "Lv 15 (枠3)",
@@ -175,8 +175,8 @@ const translations = {
 
         exec_time: "Exec Time",
 
-        strategy: "Upgrade Continuation Conditions",
-        strategy_desc: "Recycle the Echo if it doesn't meet the condition at the specified level. *Note: Strict conditions will drop potentially successful Echoes, lowering the final probability.",
+        strategy: "Continue Leveling Condition",
+        strategy_desc: "Recycle the Echo if it doesn't meet the condition at the specified level. Even if no condition is set, it will be automatically recycled if it becomes impossible to reach the target. *Note: Strict conditions will drop potentially successful Echoes, lowering the final probability.",
         lvl5: "Lv 5 (Slot 1)",
         lvl10: "Lv 10 (Slot 2)",
         lvl15: "Lv 15 (Slot 3)",
